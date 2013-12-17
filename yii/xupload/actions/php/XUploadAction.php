@@ -65,7 +65,27 @@ use Guzzle\Http\EntityBody;
  * 2. In the form model, declare an attribute to store the uploaded file data, and declare the attribute to be validated
  * 	  by the 'file' validator.
  * 3. In the controller 'view', insert a XUpload widget.
- *
+ *		<?php $form = ActiveForm::begin([
+ *		'options' => ['id' => 'fileupload', 'enctype' => 'multipart/form-data']	
+ *	//	'fieldConfig' => ['class' => ActiveField::className()],
+ *	]); ?>
+ *	$upload = new yii\xupload\models\XUploadForm;
+ *			 echo yii\xupload\XUpload::widget([
+ *							'url' => \Yii::$app->getUrlManager()->createUrl("albums/albums/upload"),
+ *							'model' => $upload,
+ *							'attribute' => 'file',
+ *	 						'multiple' => true,
+ *							'clientOptions'=> [
+ *									'maxNumberOfFiles' => 4,
+ *									'maxFileSize'=>2000000,
+ * 									'acceptFileTypes' =>  new yii\web\JsExpression('/(\.|\/)(gif|jpe?g|png)$/i'),
+ *							//		'beforeSend' => 'js:function(event, files, index, xhr, handler, callBack) {
+ *							//		handler.uploadRow.find(".upload_start button").click(callBack);
+ *							//		}',
+ *									'onComplete' => new yii\web\JsExpression('function (event, files, index, xhr, handler, callBack) {
+ *									$("#photo").hide().html(\'<img src="../../images/profiles/\'+handler.response.name +\'?\'+ d.getTime() +\'"/>\' ).fadeIn(\'fast\');
+ *									}')],
+ *				]);
  * ###Resources
  * - [xupload](http://www.yiiframework.com/extension/xupload)
  *

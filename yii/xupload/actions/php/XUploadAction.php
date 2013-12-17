@@ -50,7 +50,17 @@ use Guzzle\Http\EntityBody;
  *	      ],
  *	  ];
  *	}
+ *  public function actionCreate()
+ *	{
+ *		$model = new Albums;
+ *		$model = new \yii\xupload\models\XUploadForm;
+ *		$model->profile_id = '000';//vk todo testing
+ *		return $this->render('create', [
+ *				'model' => $model,
+ *				]);
+ *	}
  * }
+ * 
  *
  * 2. In the form model, declare an attribute to store the uploaded file data, and declare the attribute to be validated
  * 	  by the 'file' validator.

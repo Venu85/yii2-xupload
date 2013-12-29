@@ -5,7 +5,7 @@ namespace yii\xupload\models;
 use Yii;
 use yii\base\Model;
 
-class XUploadForm extends Model
+class XUploadForm extends \yii\mongodb\ActiveRecord
 {
         public $file;
         public $mime_type;

@@ -11,7 +11,7 @@ use yii\web\HttpException;
 use yii\helpers\Json;
 use \frontend\modules\albums\models\Albums;
 use \frontend\modules\profile\models\Profile;
-
+use \frontend\modules\agent\models\Agent;
 use Aws\S3\S3Client;
 use Aws\Common\Enum\Region;
 use Aws\Common\Aws;
@@ -203,6 +203,7 @@ class XUploadAction extends Action {
     
     private $_profileId;
     private $_userId;
+    private $_isAgent;
     /**
      * Initialize the propeties of pthis action, if they are not set.
      *
@@ -241,36 +242,27 @@ class XUploadAction extends Action {
      */
     public function run( ) {
 	    	$this->_profileId = Yii::$app->session->get('profileId');
-    		$this->_userId = Yii::$app->session->get('userId');
+    		$this->_userId = Yii::$app->user->id;
+    		$this->_isAgent = Yii::$app->session->get('isAgent');
         $this->sendHeaders();
-
         $this->handleDeleting() or $this->handleUploading();
-       // $this->setProfileImage();
     }
-    protected function setProfileImage(){
+    protected function setProfileImage($albmsmodel){
     	$userModel = '';
     	$sqlActivate = '';
-    	if(empty($this->_profileId)){
-    		$userModel = Agent::find(array('user_id' => $this->_userId));
-    		$sqlActivate = "UPDATE {{%agent}} SET profile_image=:profileImage WHERE user_id=:userId";
+    	if($this->_isAgent){
+    		$userModel = \frontend\modules\agent\models\Agent::find(['_id' =>new \MongoId( $albmsmodel->profile_id)]);
     	}else {
-    		$userModel = Profile::find(array('user_id' => $this->_userId));
-    		$sqlActivate = "UPDATE {{%profile}} SET profile_image=:profileImage WHERE user_id=:userId";    		
+    		$userModel =  \frontend\modules\profile\models\Profile::find(['_id' => new \MongoId($albmsmodel->profile_id)]);
     	}
-//    	if(empty($userModel->profile_image) || strcasecmp("profile_image.png", $userModel->profile_image) == 0){
     	if(empty($userModel->profile_image)){
-    			$command = Yii::$app->db->createCommand($sqlActivate);
-	    		$command->bindValues([
-	    				':userId' => $this->_userId,
-	    				':profileImage' => $this->_defaultImage,
-	    				])->execute();
-	    		
-	    		$albmModel = Albums::find(array('id' => $this->_defaultImageId));
-	    		$albmModel->profile_image =1;
-	    		$albmModel->save();
+    		$userModel->profile_image = $this->_defaultImage;
+    		$userModel->save(false);
+	    		$albmsmodel->profile_image =1;
+	    		$albmsmodel->save();
     	}
-    	
     }
+
     protected function sendHeaders()
     {
         header('Vary: Accept');
@@ -355,21 +347,23 @@ class XUploadAction extends Action {
 			       
 			       $fileextension = strtolower($fileextension);
 			       
-			       $imagename = $this->_userId.'_'.$this->_profileId ."_image.".$fileextension;
+			//       $imagename = $this->_userId.'_'.$this->_profileId ."_image.".$fileextension;
+			       $imagename = "image.".$fileextension;
 			       
 			       $albmsmodel->user_id = $this->_userId;
 			       $albmsmodel->profile_id = $this->_profileId;
 			       $albmsmodel->image_name = $imagename;
 				   $albmsmodel->image_folder= $this->_subfolder;
+				   $albmsmodel->profile_image= 0;
 			       $albmsmodel->save();
 			       
-			       $imagename = $albmsmodel->id.'_'. $imagename;
+			       $imagename = $albmsmodel->_id.'_'. $imagename;
 			       
 			       $albmsmodel->image_name = $imagename;
 			       $albmsmodel->save();
-			       
+
 			       $this->_defaultImage = $albmsmodel->image_folder.$imagename;
-			       $this->_defaultImageId = $albmsmodel->id;
+			       $this->_defaultImageId = $albmsmodel->_id;
 			       
 			      // $model->{$this->fileAttribute}->saveAs($path .$imagename);
 			       //chmod($path . $imagename, 0777);
@@ -415,7 +409,7 @@ class XUploadAction extends Action {
                    // Yii::log("XUploadAction: " . $returnValue, Logger::LEVEL_ERROR, "xupload.actions.XUploadAction");
                 }
                 //set profile image
-                $this->setProfileImage();
+                $this->setProfileImage($albmsmodel);
             } else {
                 echo Json::encode([["error" => $model->getErrors($this->fileAttribute),]]);
               //  Yii::log("XUploadAction: " . CVarDumper::dumpAsString($model->getErrors()), CLogger::LEVEL_ERROR, "xupload.actions.XUploadAction");
@@ -551,8 +545,6 @@ class XUploadAction extends Action {
     	$aws = Aws::factory(\Yii::$app->basePath.'/config/aws-config.php');
     	$s3Client = $aws->get('s3');
     
-    	//echo Yii::trace(CVarDumper::dumpAsString($aws),'vardump');
-    	//	$s3Client =  XUploadAction::createAWSS3Client();
     	try {
     		$bucketname = 'albums.matchlink.in';  //must be all lowercase
     
